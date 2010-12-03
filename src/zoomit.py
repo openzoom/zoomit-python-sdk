@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 #
 #  Copyright 2010 Daniel Gasienica <daniel@gasienica.ch>
+#  Copyright 2010 Boris Bluntschli <boris@bluntschli.ch>
 #  Copyright 2010 Facebook
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
@@ -28,6 +29,8 @@ except ImportError:
         from django.utils import simplejson
         _parse_json = lambda s: simplejson.loads(s)
 
+import urllib
+
 class ZoomItService(object):
     """A client for the Zoom.it API.
 
@@ -37,33 +40,45 @@ class ZoomItService(object):
         self.endpoint = endpoint
 
     def get_content_by_id(self, id):
-        pass
+        try:
+            response = urllib.urlopen('%s/content/%s' % (self.endpoint, id))
+            if response.code != 200:
+                message = response.read()
+                raise ZoomitServiceException(response.code, message)
+            return _parse_json(response.read())
+        except Exception, e:
+            raise e
+        finally:
+            if response:
+                response.close()
 
     def get_content_by_url(self, url):
-        pass
+        urllib.urlopen('http://api.zoom.it/v1/content/?' + urllib.urlencode({'url':photo_url}))
+        # content_info = _parse_json(content_info_response.read())
 
-class ContentInfo(object):
-    def __init__(self, id, url, ready, failed, progress, share_url,
-                 embed_html, title, attribution_text, attribution_url, dzi=None)
-        self.id = id
-        self.url = url
-        self.ready = ready
-        self.failed = failed
-        self.progress = progress
-        self.share_url = share_url
-        self.embed_html = embed_html
-        self.title = title
-        self.attribution_text = attribution_text
-        self.attribution_url = attribution_url
-        self.dzi = dzi
+class ZoomitServiceException(Exception):
+    def __init__(self, status_code, message):
+        Exception.__init__(self, message)
+        self.status_code = status_code
+            
+
+# ------------------------------------------------------------------------------
+
+import unittest
+
+class ZoomItServiceTest(unittest.TestCase):
+    def setUp(self):
+        self.service = ZoomItService()
+
+    def test_invalid_url(self):
+        def aux_test_invalid_url():
+            # Try to retrieve content for image with a funny smiley making
+            # the OMG face as its id. This should obviously fail, as 
+            # zoom.it uses non-smileys as identifiers.
+            self.service.get_content_by_id(u'8=o')            
+        
+        self.assertRaises(ZoomitServiceException, aux_test_invalid_url)
 
 
-class DZIInfo(object):
-    def __init__(self, url, width, height,
-                 tile_size, tile_overlap, tile_format):
-        self.url = url
-        self.width = width
-        self.height = height
-        self.tile_size = tile_size
-        self.tile_overlap = tile_overlap
-        self.tile_format = tile_format
+if __name__ == '__main__':
+    unittest.main()            
