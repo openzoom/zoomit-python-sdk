@@ -46,8 +46,10 @@ class ZoomItService(object):
                 message = response.read()
                 raise ZoomitServiceException(response.code, message)
             return _parse_json(response.read())
+
         except Exception, e:
             raise e
+
         finally:
             if response:
                 response.close()
@@ -60,19 +62,19 @@ class ZoomItService(object):
                 message = response.read()
                 raise ZoomitServiceException(response.code, message)
             return _parse_json(response.read())
-                
+
         except Exception, e:
             raise e
+
         finally:
             if response:
                 response.close()
-        # content_info = _parse_json(content_info_response.read())
 
 class ZoomitServiceException(Exception):
     def __init__(self, status_code, message):
         Exception.__init__(self, message)
         self.status_code = status_code
-            
+
 
 # ------------------------------------------------------------------------------
 
@@ -85,16 +87,16 @@ class ZoomItServiceTest(unittest.TestCase):
     def test_missing_id(self):
         def aux_test_missing_id():
             # Try to retrieve content for image with a funny smiley making
-            # the OMG face as its id. This should obviously fail, as 
+            # the OMG face as its id. This should obviously fail, as
             # zoom.it uses non-smileys as identifiers.
-            self.service.get_content_by_id(u'8=o')            
-        
+            self.service.get_content_by_id(u'8=o')
+
         self.assertRaises(ZoomitServiceException, aux_test_missing_id)
 
     def test_existing_id(self):
         # This test is pedo bear approved
         test_id = '8'
-        
+
         content = self.service.get_content_by_id(test_id)
         self.assertEquals(content['failed'], False)
         self.assertEquals(content['ready'], True)
@@ -107,5 +109,15 @@ class ZoomItServiceTest(unittest.TestCase):
         for key in required_keys:
             self.assertTrue(key in content, "Required key '%s' missing" % key)
 
+    def test_invalid_url(self):
+        url = '?!@#$://i/like/bacon/on/my/plate~'
+
+        def aux_test_invalid_url():
+            content = self.service.get_content_by_url(url)
+
+        self.assertRaises(ZoomitServiceException, aux_test_invalid_url)
+
+    
+
 if __name__ == '__main__':
-    unittest.main()            
+    unittest.main()
