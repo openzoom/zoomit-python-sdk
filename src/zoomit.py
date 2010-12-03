@@ -53,7 +53,19 @@ class ZoomItService(object):
                 response.close()
 
     def get_content_by_url(self, url):
-        urllib.urlopen('http://api.zoom.it/v1/content/?' + urllib.urlencode({'url':photo_url}))
+        try:
+            request_url = '%s/content/?%s' % (self.endpoint, urllib.urlencode({'url': url}))
+            response = urllib.urlopen(request_url)
+            if response.code >= 400:
+                message = response.read()
+                raise ZoomitServiceException(response.code, message)
+            return _parse_json(response.read())
+                
+        except Exception, e:
+            raise e
+        finally:
+            if response:
+                response.close()
         # content_info = _parse_json(content_info_response.read())
 
 class ZoomitServiceException(Exception):
@@ -70,15 +82,30 @@ class ZoomItServiceTest(unittest.TestCase):
     def setUp(self):
         self.service = ZoomItService()
 
-    def test_invalid_url(self):
-        def aux_test_invalid_url():
+    def test_missing_id(self):
+        def aux_test_missing_id():
             # Try to retrieve content for image with a funny smiley making
             # the OMG face as its id. This should obviously fail, as 
             # zoom.it uses non-smileys as identifiers.
             self.service.get_content_by_id(u'8=o')            
         
-        self.assertRaises(ZoomitServiceException, aux_test_invalid_url)
+        self.assertRaises(ZoomitServiceException, aux_test_missing_id)
 
+    def test_existing_id(self):
+        # This test is pedo bear approved
+        test_id = '8'
+        
+        content = self.service.get_content_by_id(test_id)
+        self.assertEquals(content['failed'], False)
+        self.assertEquals(content['ready'], True)
+        self.assertEquals(content['id'], test_id)
+
+    def test_existing_url(self):
+        url = 'http://answers.yahoo.com/question/index?qid=20080331170418AAhm4TU'
+        content = self.service.get_content_by_url(url)
+        required_keys = [u'id', u'embedHtml', u'url', u'shareUrl', u'dzi', u'failed', u'ready', u'progress']
+        for key in required_keys:
+            self.assertTrue(key in content, "Required key '%s' missing" % key)
 
 if __name__ == '__main__':
     unittest.main()            
