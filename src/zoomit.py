@@ -56,7 +56,8 @@ class ZoomItService(object):
 
     def get_content_by_url(self, url):
         try:
-            request_url = '%s/content/?%s' % (self.endpoint, urllib.urlencode({'url': url}))
+            request_url = '%s/content/?%s' % (self.endpoint,
+                                              urllib.urlencode({'url': url}))
             response = urllib.urlopen(request_url)
             if response.code >= 400:
                 message = response.read()
@@ -105,7 +106,8 @@ class ZoomItServiceTest(unittest.TestCase):
     def test_existing_url(self):
         url = 'http://answers.yahoo.com/question/index?qid=20080331170418AAhm4TU'
         content = self.service.get_content_by_url(url)
-        required_keys = [u'id', u'embedHtml', u'url', u'shareUrl', u'dzi', u'failed', u'ready', u'progress']
+        required_keys = [u'id', u'embedHtml', u'url', u'shareUrl', u'dzi',
+                         u'failed', u'ready', u'progress']
         for key in required_keys:
             self.assertTrue(key in content, "Required key '%s' missing" % key)
 
